@@ -28,28 +28,26 @@ func main() {
 		return
 	}
 
-	wrappedSecretjson, err := os.ReadFile(*keyfilepath)
+	var kfs tpmaead.AESCTRHMACKeyFile
+
+	kfbytes, err := os.ReadFile(*keyfilepath)
 	if err != nil {
-		fmt.Printf("go-kms-wrapping:  Could not get PCRMap: %s", err)
+		fmt.Printf("go-kms-wrapping:  Could not read keyfile: %s", err)
 		return
 	}
-
-	/// *********************************************************************
-
-	var wrappb tpmaead.AESCTRHMACKeyFile
-	err = json.Unmarshal(wrappedSecretjson, &wrappb)
+	err = json.Unmarshal(kfbytes, &kfs)
 	if err != nil {
 		fmt.Printf("go-kms-wrapping:  Error parsing JSON: %v", err)
 		return
 	}
 
-	a, err := keyfile.Decode([]byte(wrappb.AESKey))
+	a, err := keyfile.Decode([]byte(kfs.AESKey))
 	if err != nil {
 		fmt.Printf("go-kms-wrapping:   error loading external key: %v", err)
 		return
 	}
 
-	h, err := keyfile.Decode([]byte(wrappb.HMACKey))
+	h, err := keyfile.Decode([]byte(kfs.HMACKey))
 	if err != nil {
 		fmt.Printf("go-kms-wrapping:   error loading external key: %v", err)
 		return

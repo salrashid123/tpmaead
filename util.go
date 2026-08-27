@@ -70,25 +70,17 @@ func encryptDecryptSymmetric(rwr transport.TPM, keyAuth tpm2.AuthHandle, iv, dat
 	return out, nil
 }
 
-// parses the pcr [index:sha256_hex_value] string array for the PCRs to bind to.
+// parses the pcr  string array for the PCRs to bind to.
 // each pcr bank must comma separated and formatted as int(index):hex(sha256_pcr_value)
-//
-//	so to bind to pcrs 15, 23 for the following:
-//
-// $ tpm2_pcrread sha256:15,23
-// sha256:
-//
-//	15: 0x0000000000000000000000000000000000000000000000000000000000000000
-//	23: 0xF5A5FD42D16A20302798EF6ED309979B43003D2320D9F0E8EA9831A92759FB4B
-//
+// 15: 0x0000000000000000000000000000000000000000000000000000000000000000
+// 23: 0xF5A5FD42D16A20302798EF6ED309979B43003D2320D9F0E8EA9831A92759FB4B
 // the expectedPCRMap would be
 // 15:0000000000000000000000000000000000000000000000000000000000000000,23:F5A5FD42D16A20302798EF6ED309979B43003D2320D9F0E8EA9831A92759FB4B
-//
 // the return value is
-//  1. map of pcr_bank and its value (map[uint][]byte)
-//  2. list of the pcr_banks alone ([]uint)
-//  3. the hash of the pcrs taken together in order ([]byte);  This value is used when defining a PolicyPCR
-//     https://github.com/tpm2-software/tpm2-tools/blob/83f6f8ac5de5a989d447d8791525eb6b6472e6ac/lib/tpm2_openssl.c#L206
+// 1. map of pcr_bank and its value (map[uint][]byte)
+// 2. list of the pcr_banks alone ([]uint)
+// 3. the hash of the pcrs taken together in order ([]byte);  This value is used when defining a PolicyPCR
+// https://github.com/tpm2-software/tpm2-tools/blob/83f6f8ac5de5a989d447d8791525eb6b6472e6ac/lib/tpm2_openssl.c#L206
 func GetPCRMap(algo tpm2.TPMAlgID, expectedPCRMap string) (map[uint][]byte, []uint, []byte, error) {
 
 	pcrMap := make(map[uint][]byte)

@@ -77,19 +77,14 @@ To encrypt, load the keys and supply the cleartext and AAD
 
 ```golang
     // read the key file and unmarshal it
+	var kfs tpmaead.AESCTRHMACKeyFile
+
 	kfbytes, err := os.ReadFile(*keyfilepath)
+
 	err = json.Unmarshal(kfbytes, &kfs)
 
-	fmt.Printf("%s\n", kfs.AESKey)
-	fmt.Printf("%s\n", kfs.HMACKey)
-	wrappedSecretjson, err := json.Marshal(kfs)
-
-    // load it into the struct to extract the aes and hmac key
-	var wrappb tpmaead.AESCTRHMACKeyFile
-	err = json.Unmarshal(wrappedSecretjson, &wrappb)
-
-	a, err := keyfile.Decode([]byte(wrappb.AESKey))
-	h, err := keyfile.Decode([]byte(wrappb.HMACKey))
+	a, err := keyfile.Decode([]byte(kfs.AESKey))
+	h, err := keyfile.Decode([]byte(kfs.HMACKey))
 
     // now create a policy session to apply to the key operations, in this case, no policy
 	policySession, err := tpmaead.NewNoPolicySession()
@@ -118,19 +113,14 @@ To decrypt, run a similar sequence
 
 ```golang
     // read the key file and unmarshal it
+	var kfs tpmaead.AESCTRHMACKeyFile
+
 	kfbytes, err := os.ReadFile(*keyfilepath)
+
 	err = json.Unmarshal(kfbytes, &kfs)
 
-	fmt.Printf("%s\n", kfs.AESKey)
-	fmt.Printf("%s\n", kfs.HMACKey)
-	wrappedSecretjson, err := json.Marshal(kfs)
-
-    // load it into the struct to extract the aes and hmac key
-	var wrappb tpmaead.AESCTRHMACKeyFile
-	err = json.Unmarshal(wrappedSecretjson, &wrappb)
-
-	a, err := keyfile.Decode([]byte(wrappb.AESKey))
-	h, err := keyfile.Decode([]byte(wrappb.HMACKey))
+	a, err := keyfile.Decode([]byte(kfs.AESKey))
+	h, err := keyfile.Decode([]byte(kfs.HMACKey))
 
     // load the ciphertext
 	ciphertext, err := os.ReadFile(*encryptedfilepath)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -40,41 +39,13 @@ func main() {
 		return
 	}
 
-	fmt.Printf("%s\n", kfs.AESKey)
-	fmt.Printf("%s\n", kfs.HMACKey)
-
-	wrappedSecretjson, err := json.Marshal(kfs)
-	if err != nil {
-		fmt.Printf("go-kms-wrapping:  Error marshaling to JSON: %v", err)
-		return
-	}
-
-	var prettyJSON bytes.Buffer
-	// Arguments: target buffer, source bytes, prefix for every line, indent characters
-	err = json.Indent(&prettyJSON, wrappedSecretjson, "", "    ")
-	if err != nil {
-		fmt.Printf("go-kms-wrapping: JSON indenting failed: %s", err)
-		return
-	}
-
-	fmt.Println(prettyJSON.String())
-
-	/// *********************************************************************
-
-	var wrappb tpmaead.AESCTRHMACKeyFile
-	err = json.Unmarshal(wrappedSecretjson, &wrappb)
-	if err != nil {
-		fmt.Printf("go-kms-wrapping:  Error parsing JSON: %v", err)
-		return
-	}
-
-	a, err := keyfile.Decode([]byte(wrappb.AESKey))
+	a, err := keyfile.Decode([]byte(kfs.AESKey))
 	if err != nil {
 		fmt.Printf("go-kms-wrapping:   error loading external key: %v", err)
 		return
 	}
 
-	h, err := keyfile.Decode([]byte(wrappb.HMACKey))
+	h, err := keyfile.Decode([]byte(kfs.HMACKey))
 	if err != nil {
 		fmt.Printf("go-kms-wrapping:   error loading external key: %v", err)
 		return
