@@ -257,8 +257,7 @@ tpm2_policyauthvalue -S session.dat -L policy.dat
 tpm2_flushcontext -t && tpm2_flushcontext -s && tpm2_flushcontext -l  
 
 ### to import a key
-# echo -n "change this password to a secret" > hmac.key
-# hexkey=$(xxd -p -c 256 < hmac.key)
+# dd if=/dev/urandom of=hmac.key bs=1 count=32
 # tpm2 import -C primary.ctx -G hmac -g sha256 -i hmac.key -u hmac.pub -r hmac.priv  -L policy.dat -pfoo
 # tpm2_flushcontext -t && tpm2_flushcontext -s && tpm2_flushcontext -l  
 
@@ -266,18 +265,15 @@ tpm2_flushcontext -t && tpm2_flushcontext -s && tpm2_flushcontext -l
 tpm2_create -G hmac:sha256  -g sha256  -u hmac.pub -r hmac.priv -C primary.ctx -L policy.dat -pfoo
 tpm2_flushcontext -t && tpm2_flushcontext -s && tpm2_flushcontext -l  
 
-
 ### to test hmac
 tpm2 load -C primary.ctx -u hmac.pub -r hmac.priv -c hmac.ctx
-
-echo "foo" > secret.dat
-
 tpm2_startauthsession  --policy-session  -S session.dat
 tpm2_pcrread sha256:23 -o pcr23_val.bin
 tpm2_policypcr -S session.dat -l sha256:23  -L policy.dat -f pcr23_val.bin
 tpm2_policyauthvalue -S session.dat -L policy.dat
-tpm2_hmac -g sha256 -c hmac.ctx  -p"session:session.dat+foo" --hex secret.dat
 
+echo "foo" > secret.dat
+tpm2_hmac -g sha256 -c hmac.ctx  -p"session:session.dat+foo" --hex secret.dat
 tpm2_flushcontext -t && tpm2_flushcontext -s && tpm2_flushcontext -l 
 
 tpm2_encodeobject -C primary.ctx -u hmac.pub -r  hmac.priv -o hmac.pem
