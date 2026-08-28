@@ -20,7 +20,7 @@ const (
 	tagSize   = 32 // SHA-256 tag size
 )
 
-// CipherEtM implements the cipher.AEAD interface using AES-CTR and HMAC-SHA256
+// TPMAEAD implements the cipher.AEAD interface using AES-CTR and HMAC-SHA256
 type TPMAEAD struct {
 	tpmPath    string
 	keyPass    []byte

@@ -54,7 +54,7 @@ var (
 	}
 )
 
-func TestAEAD(t *testing.T) {
+func TestPolicyPCRAndAuthValueSession(t *testing.T) {
 
 	tests := []struct {
 		name          string
@@ -180,6 +180,119 @@ func TestNoPolicy(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, dataToEncrypt, string(decrypted))
 
+}
+
+func TestPolicyAuthValue(t *testing.T) {
+
+	dataToEncrypt := []byte("bar")
+	passwd := []byte("foo")
+	trialSession, err := NewPolicyAuthValueSession(passwd)
+	require.NoError(t, err)
+
+	kfs, err := NewKey(swTPMPath, []byte(passwd), []byte(nil), trialSession)
+	require.NoError(t, err)
+
+	/// *********************************************************************
+
+	a, err := keyfile.Decode([]byte(kfs.AESKey))
+	require.NoError(t, err)
+
+	h, err := keyfile.Decode([]byte(kfs.HMACKey))
+	require.NoError(t, err)
+
+	policySessionEncrypt, err := NewPolicyAuthValueSession(passwd)
+	require.NoError(t, err)
+
+	aeadE, err := NewAESCTRHMAC(swTPMPath, nil, a, h, policySessionEncrypt)
+	require.NoError(t, err)
+
+	nonce := make([]byte, aeadE.NonceSize())
+	_, err = rand.Read(nonce)
+	require.NoError(t, err)
+
+	plaintext := dataToEncrypt
+	associatedData := []byte("aad")
+
+	// Encrypt
+	ciphertext := aeadE.Seal(nil, nonce, plaintext, associatedData)
+
+	// Decrypt
+	policySessionDecrypt, err := NewPolicyAuthValueSession(passwd)
+	require.NoError(t, err)
+
+	aeadD, err := NewAESCTRHMAC(swTPMPath, nil, a, h, policySessionDecrypt)
+	require.NoError(t, err)
+
+	nonceSize := aeadD.NonceSize()
+	retrievedNonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
+	// // Decrypt
+	decrypted, err := aeadD.Open(nil, retrievedNonce, actualCiphertext, associatedData)
+	require.NoError(t, err)
+	require.Equal(t, string(dataToEncrypt), string(decrypted))
+}
+
+func TestPolicyPCR(t *testing.T) {
+
+	dataToEncrypt := []byte("bar")
+
+	_, pcrList, pcrHash, err := GetPCRMap(tpm2.TPMAlgSHA256, "23:0000000000000000000000000000000000000000000000000000000000000000")
+
+	require.NoError(t, err)
+
+	sel := tpm2.TPMLPCRSelection{
+		PCRSelections: []tpm2.TPMSPCRSelection{
+			{
+				Hash:      tpm2.TPMAlgSHA256,
+				PCRSelect: tpm2.PCClientCompatible.PCRs(pcrList...),
+			},
+		},
+	}
+
+	trialSession, err := NewPCRSession(sel, tpm2.TPM2BDigest{Buffer: pcrHash})
+	require.NoError(t, err)
+
+	kfs, err := NewKey(swTPMPath, []byte(nil), []byte(nil), trialSession)
+	require.NoError(t, err)
+
+	/// *********************************************************************
+
+	a, err := keyfile.Decode([]byte(kfs.AESKey))
+	require.NoError(t, err)
+
+	h, err := keyfile.Decode([]byte(kfs.HMACKey))
+	require.NoError(t, err)
+
+	policySessionEncrypt, err := NewPCRSession(sel, tpm2.TPM2BDigest{Buffer: pcrHash})
+	require.NoError(t, err)
+
+	aeadE, err := NewAESCTRHMAC(swTPMPath, nil, a, h, policySessionEncrypt)
+	require.NoError(t, err)
+
+	nonce := make([]byte, aeadE.NonceSize())
+	_, err = rand.Read(nonce)
+	require.NoError(t, err)
+
+	plaintext := dataToEncrypt
+	associatedData := []byte("aad")
+
+	// Encrypt
+	ciphertext := aeadE.Seal(nil, nonce, plaintext, associatedData)
+
+	// Decrypt
+	policySessionDecrypt, err := NewPCRSession(sel, tpm2.TPM2BDigest{Buffer: pcrHash})
+	require.NoError(t, err)
+
+	aeadD, err := NewAESCTRHMAC(swTPMPath, nil, a, h, policySessionDecrypt)
+	require.NoError(t, err)
+
+	nonceSize := aeadD.NonceSize()
+	retrievedNonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
+	// // Decrypt
+	decrypted, err := aeadD.Open(nil, retrievedNonce, actualCiphertext, associatedData)
+	require.NoError(t, err)
+	require.Equal(t, string(dataToEncrypt), string(decrypted))
 }
 
 func TestVector(t *testing.T) {
