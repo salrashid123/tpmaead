@@ -236,9 +236,7 @@ func NewKey(tpmPath string, keyPass []byte, parentPass []byte, session Session) 
 }
 
 // NewAESCTRHMAC returns a new AEAD instance.
-// Expects the keyfile.TPMKey format of the AES and HMAC key
-//
-//	the sesion object specifies any TPM polcies applied during key genration which must get fulfilled when using the key for any operation
+// Expects the keyfile.TPMKey format of the AES and HMAC key.  The sesion object specifies any TPM polcies applied during key genration which must get fulfilled when using the key for any operation
 func NewAESCTRHMAC(tpmPath string, parentPass []byte, aesKey *keyfile.TPMKey, hmacKey *keyfile.TPMKey, session Session) (cipher.AEAD, error) {
 	rwc, err := openTPM(tpmPath)
 	if err != nil {

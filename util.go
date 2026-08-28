@@ -71,9 +71,9 @@ func encryptDecryptSymmetric(rwr transport.TPM, keyAuth tpm2.AuthHandle, iv, dat
 }
 
 // parses the pcr  string array for the PCRs to bind to.
-// to bind to pcr 15 and 23, specify the hex format to bind to
-//
-//	expectedPCRMap="// 15:0000000000000000000000000000000000000000000000000000000000000000,23:F5A5FD42D16A20302798EF6ED309979B43003D2320D9F0E8EA9831A92759FB4B"
+// to bind to pcr 15 and 23, specify the hex format to bind to.
+// For examploe, to, set comma separated in increasing index order: int(pcr_number:hex(pcr_value).
+// expectedPCRMap=15:0000000000000000000000000000000000000000000000000000000000000000,23:F5A5FD42D16A20302798EF6ED309979B43003D2320D9F0E8EA9831A92759FB4B
 func GetPCRMap(algo tpm2.TPMAlgID, expectedPCRMap string) (map[uint][]byte, []uint, []byte, error) {
 
 	pcrMap := make(map[uint][]byte)
