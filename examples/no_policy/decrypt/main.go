@@ -59,7 +59,7 @@ func main() {
 		return
 	}
 
-	aead, err := tpmaead.NewAESCTRHMAC(*tpmPath, []byte(nil), a, h, policySession)
+	aead, err := tpmaead.NewAESCTRHMAC(*tpmPath, nil, a, h, policySession)
 	if err != nil {
 		panic(err)
 	}

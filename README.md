@@ -1,10 +1,24 @@
 ## AEAD Encryption with Trusted Platform Module
 
-go library which implements `AES256_CTR_HMAC_SHA256` for Trusted Platform Module (TPM).
+go library which implements `AES-256-CTR HMAC-SHA256` for Trusted Platform Module (TPM).
 
-This serves to provide a form of AEAD encryption for TPMs which do not support AES GCM or other native AEAD schemes.   TPM AES encryption only support [limited operation modes](https://github.com/tpm2-software/tpm2-tools/blob/master/man/common/alg.md#modes) such as `ctr|ofb|cbc|cfb|ecb`.  
+This serves to provide a form of AEAD encryption for TPMs which do not support AES GCM or other native AEAD schemes.   TPM AES encryption only support [limited operation modes](https://github.com/tpm2-software/tpm2-tools/blob/master/man/common/alg.md#modes) such as `ctr|ofb|cbc|cfb|ecb` and does not include `gcm`
 
 However, you can sythesize AEAD using `AES-CTR` an `HMAC-256` keys together provides AEAD on a TPM.  For more information on AES-CTR-HMAC, see documentation for [Google TINK encryption](https://developers.google.com/tink/aead).
+
+Critically, the AEAD key operations only occur within the TPM and the raw keys themselves are never exposed outside of the TPM.
+
+   NewKey:
+   - `1`:  Generate `AESKey = TPM2_Create(aes256ctr)`
+   - `2`:  Generate `HMACKey = TPM2_Create(hmac256)`
+
+   Encrypt/Seal:
+
+   - `3`: `ciphertext = TPM2_Encrypt( key=(AESKey,HMACKey), aad , plaintext )`
+
+   Decrypt/Open:
+
+   - `4`: `plaintext = TPM2_Decrypt( key=(AESKey,HMACKey), aad , ciphertext )`
 
 ---
 
@@ -33,9 +47,13 @@ The basic end to end sample with no policy constraint can be found in `examples/
 To use run
 
 ```bash
-go run examples/no_policy/newkey/main.go
-go run examples/no_policy/encrypt/main.go
-go run examples/no_policy/decrypt/main.go
+cd examples/
+
+go run no_policy/newkey/main.go
+
+go run no_policy/encrypt/main.go
+
+go run no_policy/decrypt/main.go
 ```
 
 #### Create key
@@ -45,7 +63,7 @@ go run examples/no_policy/decrypt/main.go
 	trialSession, err := NewNoPolicySession()
 
     // create a keypair wihthout any policies or password constraints
-	kfs, err := NewKey(swTPMPath, []byte(nil), []byte(nil), trialSession)
+	kfs, err := NewKey(swTPMPath, nil, nil, trialSession)
 
     // retrieve the keys.
 	a, err := keyfile.Decode([]byte(kfs.AESKey))
@@ -90,7 +108,7 @@ To encrypt, load the keys and supply the cleartext and AAD
 	policySession, err := tpmaead.NewNoPolicySession()
 
     // initialize the AEAD
-	aead, err := tpmaead.NewAESCTRHMAC(*tpmPath, []byte(*parentPass), a, h, policySession)
+	aead, err := tpmaead.NewAESCTRHMAC(*tpmPath, nil, a, h, policySession)
 
     // create a nonce
 	nonce := make([]byte, aead.NonceSize())
@@ -129,11 +147,12 @@ To decrypt, run a similar sequence
 	policySession, err := tpmaead.NewNoPolicySession()
 
     // initialize the AEAD
-	aead, err := tpmaead.NewAESCTRHMAC(*tpmPath, []byte(nil), a, h, policySession)
+	aead, err := tpmaead.NewAESCTRHMAC(*tpmPath, nil, a, h, policySession)
 
     // set the AAD, extract just the ciphertext and decrypt
 	associatedData := []byte(*aad)
 	nonceSize := aead.NonceSize()
+
 	retrievedNonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 
 	decrypted, err := aead.Open(nil, retrievedNonce, actualCiphertext, associatedData)

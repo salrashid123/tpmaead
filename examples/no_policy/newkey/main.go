@@ -13,7 +13,6 @@ import (
 var (
 	tpmPath     = flag.String("tpm-path", "127.0.0.1:2321", "Path to the TPM device (character device or a Unix socket).")
 	keyfilepath = flag.String("keyfilepath", "/tmp/key.json", "Path to save keyfiles")
-	parentPass  = flag.String("parentPass", "", "Passphrase for the owner handle (will use TPM_PARENT_AUTH env var)")
 )
 
 func main() {
@@ -27,7 +26,7 @@ func main() {
 		return
 	}
 
-	kfs, err := tpmaead.NewKey(*tpmPath, []byte(nil), []byte(*parentPass), trialSession)
+	kfs, err := tpmaead.NewKey(*tpmPath, nil, nil, trialSession)
 	if err != nil {
 		fmt.Printf("go-kms-wrapping:  Could not get PCRMap: %s", err)
 		return

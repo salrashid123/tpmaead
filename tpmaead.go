@@ -22,6 +22,7 @@ const (
 
 // TPMAEAD implements the cipher.AEAD interface using AES-CTR and HMAC-SHA256
 type TPMAEAD struct {
+	_          cipher.AEAD
 	tpmPath    string
 	keyPass    []byte
 	parentPass []byte
