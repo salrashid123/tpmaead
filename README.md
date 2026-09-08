@@ -20,6 +20,8 @@ Critically, the AEAD key operations only occur within the TPM and the raw keys t
 
    - `4`: `plaintext = TPM2_Decrypt( key=(AESKey,HMACKey), aad , ciphertext )`
 
+>> NOTE: use this to encrypt/decrypt small amounts of data as TPM based operations are have limited performence
+
 ---
 
 ### Setup
