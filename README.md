@@ -1,6 +1,6 @@
 ## AEAD Encryption with Trusted Platform Module
 
-go library which implements `AES-256-CTR HMAC-SHA256` for Trusted Platform Module (TPM).
+go library which implements `AES-128-CTR HMAC-SHA256` and `AES-256-CTR HMAC-SHA256` [Authenticated Encryption](https://en.wikipedia.org/wiki/Authenticated_encryption) for Trusted Platform Module (TPM).
 
 This serves to provide a form of AEAD encryption for TPMs which do not support AES GCM or other native AEAD schemes.   TPM AES encryption only support [limited operation modes](https://github.com/tpm2-software/tpm2-tools/blob/master/man/common/alg.md#modes) such as `ctr|ofb|cbc|cfb|ecb` and does not include `gcm`
 
@@ -14,11 +14,11 @@ Critically, the AEAD key operations only occur within the TPM and the raw keys t
 
    Encrypt/Seal:
 
-   - `3`: `ciphertext = TPM2_Encrypt( key=(AESKey,HMACKey), aad , plaintext )`
+   - `3`: `ciphertext = TPM2_Encrypt_Then_MAC( key=(AESKey,HMACKey), aad , plaintext )`
 
    Decrypt/Open:
 
-   - `4`: `plaintext = TPM2_Decrypt( key=(AESKey,HMACKey), aad , ciphertext )`
+   - `4`: `plaintext = TPM2_MAC_Verify_Then_Decrypt( key=(AESKey,HMACKey), aad , ciphertext )`
 
 >> NOTE: use this to encrypt/decrypt small amounts of data as TPM based operations are have limited performence
 
@@ -65,7 +65,7 @@ go run no_policy/decrypt/main.go
 	trialSession, err := NewNoPolicySession()
 
     // create a keypair wihthout any policies or password constraints
-	kfs, err := NewKey(swTPMPath, nil, nil, trialSession)
+	kfs, err := NewKey(swTPMPath, tpmaead.AESKey256, nil, nil, trialSession)
 
     // retrieve the keys.
 	a, err := keyfile.Decode([]byte(kfs.AESKey))
@@ -114,9 +114,7 @@ To encrypt, load the keys and supply the cleartext and AAD
 
     // create a nonce
 	nonce := make([]byte, aead.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		panic(err)
-	}
+	_, err = rand.Read(nonce)
 
 	plaintext := []byte(*dataToEncrypt)
 	associatedData := []byte(*aad)
@@ -171,6 +169,7 @@ This repo contains
 
 * `NoPolicySession()`
 * `NewPCRAndAuthValueSession()`
+* `NewPolicyAuthValueSession()`
 
 but you can define you rown policy sequence using a similar pattern by implementing the following interface 
 
@@ -312,3 +311,4 @@ envsubst < "key.json.tmpl" > "/tmp/key_test_vector.json"
 
 * [RFC3686: Using Advanced Encryption Standard (AES) Counter Mode](https://www.rfc-editor.org/info/rfc3686/)
 * [https://github.com/tmthrgd/aes-ctr-hmac-sha256](https://github.com/tmthrgd/aes-ctr-hmac-sha256)
+* [TPM backed crypto/rand Reader](https://github.com/salrashid123/tpmrand)

@@ -16,7 +16,7 @@ var (
 	tpmPath           = flag.String("tpm-path", "127.0.0.1:2321", "Path to the TPM device (character device or a Unix socket).")
 	keyfilepath       = flag.String("keyfilepath", "/tmp/key.json", "Path to save keyfiles")
 	encryptedfilepath = flag.String("encryptedfilepath", "/tmp/encrypted.bin", "Path to save the encryptedfilepath")
-	dataToEncrypt     = flag.String("dataToEncrypt", "Highly confidential data payload goes here.", "data to encrypt")
+	dataToEncrypt     = flag.String("dataToEncrypt", "some data to encrypt", "data to encrypt")
 	aad               = flag.String("aad", "user-id-10029", "AAD")
 )
 
@@ -63,7 +63,8 @@ func main() {
 	}
 
 	nonce := make([]byte, aead.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
+	_, err = rand.Read(nonce)
+	if err != nil {
 		fmt.Printf("Could not get nonce random: %s", err)
 		return
 	}

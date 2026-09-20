@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	kfs, err := tpmaead.NewKey(*tpmPath, nil, nil, trialSession)
+	kfs, err := tpmaead.NewKey(*tpmPath, tpmaead.AESKey256, nil, nil, trialSession)
 	if err != nil {
 		fmt.Printf("go-kms-wrapping:  Could not get PCRMap: %s", err)
 		return

@@ -53,7 +53,7 @@ func TestPolicyPCRAndAuthValueSession(t *testing.T) {
 			trialSession, err := NewPCRAndAuthValueSession(sel, tpm2.TPM2BDigest{Buffer: pcrHash}, nil)
 			require.NoError(t, err)
 
-			kfs, err := NewKey(swTPMPath, []byte(tc.keyPass), []byte(nil), trialSession)
+			kfs, err := NewKey(swTPMPath, AESKey256, []byte(tc.keyPass), []byte(nil), trialSession)
 			require.NoError(t, err)
 
 			/// *********************************************************************
@@ -106,7 +106,7 @@ func TestNoPolicy(t *testing.T) {
 	trialSession, err := NewNoPolicySession()
 	require.NoError(t, err)
 
-	kfs, err := NewKey(swTPMPath, []byte(nil), []byte(nil), trialSession)
+	kfs, err := NewKey(swTPMPath, AESKey256, []byte(nil), []byte(nil), trialSession)
 	require.NoError(t, err)
 
 	a, err := keyfile.Decode([]byte(kfs.AESKey))
@@ -158,7 +158,7 @@ func TestLargePlaintext(t *testing.T) {
 	trialSession, err := NewNoPolicySession()
 	require.NoError(t, err)
 
-	kfs, err := NewKey(swTPMPath, []byte(nil), []byte(nil), trialSession)
+	kfs, err := NewKey(swTPMPath, AESKey256, []byte(nil), []byte(nil), trialSession)
 	require.NoError(t, err)
 
 	a, err := keyfile.Decode([]byte(kfs.AESKey))
@@ -228,7 +228,7 @@ func TestParentAuth(t *testing.T) {
 	trialSession, err := NewNoPolicySession()
 	require.NoError(t, err)
 
-	kfs, err := NewKey(swTPMPath, []byte(nil), []byte(ownerPwd), trialSession)
+	kfs, err := NewKey(swTPMPath, AESKey256, []byte(nil), []byte(ownerPwd), trialSession)
 	require.NoError(t, err)
 
 	a, err := keyfile.Decode([]byte(kfs.AESKey))
@@ -298,7 +298,7 @@ func TestPolicyAuthValue(t *testing.T) {
 	trialSession, err := NewPolicyAuthValueSession(passwd)
 	require.NoError(t, err)
 
-	kfs, err := NewKey(swTPMPath, []byte(passwd), []byte(nil), trialSession)
+	kfs, err := NewKey(swTPMPath, AESKey256, []byte(passwd), []byte(nil), trialSession)
 	require.NoError(t, err)
 
 	/// *********************************************************************
@@ -361,7 +361,7 @@ func TestPolicyPCR(t *testing.T) {
 	trialSession, err := NewPCRSession(sel, tpm2.TPM2BDigest{Buffer: pcrHash})
 	require.NoError(t, err)
 
-	kfs, err := NewKey(swTPMPath, []byte(nil), []byte(nil), trialSession)
+	kfs, err := NewKey(swTPMPath, AESKey256, []byte(nil), []byte(nil), trialSession)
 	require.NoError(t, err)
 
 	/// *********************************************************************
@@ -733,7 +733,7 @@ func TestAAD(t *testing.T) {
 			trialSession, err := NewPCRAndAuthValueSession(sel, tpm2.TPM2BDigest{Buffer: pcrHash}, nil)
 			require.NoError(t, err)
 
-			kfs, err := NewKey(swTPMPath, []byte(nil), []byte(nil), trialSession)
+			kfs, err := NewKey(swTPMPath, AESKey256, []byte(nil), []byte(nil), trialSession)
 			require.NoError(t, err)
 
 			/// *********************************************************************

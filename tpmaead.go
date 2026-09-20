@@ -18,7 +18,15 @@ import (
 const (
 	nonceSize = 12 // Standard 96-bit nonce for CTR
 	tagSize   = 32 // SHA-256 tag size
+
+	AESKey128 KeySize = 128
+	AESKey256 KeySize = 256
 )
+
+type KeySize int
+
+// Define the enum values explicitly.
+const ()
 
 // TPMAEAD implements the cipher.AEAD interface using AES-CTR and HMAC-SHA256
 type TPMAEAD struct {
@@ -33,11 +41,12 @@ type TPMAEAD struct {
 
 // Generates a new AES+HMAC set of keys where
 // tpmPath: the string path to the tpm device
+// aesKeySize: either 128 or 256
 // keypass:  the authPassword for both keys
 // parentpass:  the password for the parent key (this is rare to specify)
 // session:  tpmaead.Session implementation which describes any TPM policies to apply to the keys
 // returns  a struct where both the AES and HMAC keys in keyfile format which can be exported as PEM
-func NewKey(tpmPath string, keyPass []byte, parentPass []byte, session Session) (kf AESCTRHMACKeyFile, err error) {
+func NewKey(tpmPath string, aesKeySize KeySize, keyPass []byte, parentPass []byte, session Session) (AESCTRHMACKeyFile, error) {
 	// open the tpm
 	rwc, err := openTPM(tpmPath)
 	if err != nil {
@@ -109,7 +118,7 @@ func NewKey(tpmPath string, keyPass []byte, parentPass []byte, session Session) 
 						Mode:      tpm2.NewTPMUSymMode(tpm2.TPMAlgAES, tpm2.TPMAlgCTR),
 						KeyBits: tpm2.NewTPMUSymKeyBits(
 							tpm2.TPMAlgAES,
-							tpm2.TPMKeyBits(256),
+							tpm2.TPMKeyBits(aesKeySize),
 						),
 					},
 				},
