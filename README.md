@@ -170,8 +170,25 @@ This repo contains
 * `NoPolicySession()`
 * `NewPCRAndAuthValueSession()`
 * `NewPolicyAuthValueSession()`
+* `NewPCRSession()`
 
-but you can define you rown policy sequence using a similar pattern by implementing the following interface 
+```bash
+cd examples/
+
+go run policy_auth_value/newkey/main.go
+go run policy_auth_value/encrypt/main.go
+go run policy_auth_value/decrypt/main.go
+
+go run policy_pcr/newkey/main.go
+go run policy_pcr/encrypt/main.go
+go run policy_pcr/decrypt/main.go
+
+go run policy_pcr_auth_value/newkey/main.go
+go run policy_pcr_auth_value/encrypt/main.go
+go run policy_pcr_auth_value/decrypt/main.go
+```
+
+You can define you rown policy sequence using a similar pattern by implementing the following interface 
 
 ```golang
 type Session interface {

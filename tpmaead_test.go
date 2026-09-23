@@ -101,51 +101,63 @@ func TestPolicyPCRAndAuthValueSession(t *testing.T) {
 
 func TestNoPolicy(t *testing.T) {
 
-	dataToEncrypt := "foo"
-	aad := "myaad"
-	trialSession, err := NewNoPolicySession()
-	require.NoError(t, err)
+	tests := []struct {
+		name    string
+		keySize KeySize
+	}{
+		{"test1_aes128", AESKey128},
+		{"test2_aes256", AESKey256},
+	}
 
-	kfs, err := NewKey(swTPMPath, AESKey256, []byte(nil), []byte(nil), trialSession)
-	require.NoError(t, err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
 
-	a, err := keyfile.Decode([]byte(kfs.AESKey))
-	require.NoError(t, err)
+			dataToEncrypt := "foo"
+			aad := "myaad"
+			trialSession, err := NewNoPolicySession()
+			require.NoError(t, err)
 
-	h, err := keyfile.Decode([]byte(kfs.HMACKey))
-	require.NoError(t, err)
+			kfs, err := NewKey(swTPMPath, tc.keySize, []byte(nil), []byte(nil), trialSession)
+			require.NoError(t, err)
 
-	policySessionEncrypt, err := NewNoPolicySession()
-	require.NoError(t, err)
+			a, err := keyfile.Decode([]byte(kfs.AESKey))
+			require.NoError(t, err)
 
-	aeadE, err := NewAESCTRHMAC(swTPMPath, []byte(nil), a, h, policySessionEncrypt)
-	require.NoError(t, err)
+			h, err := keyfile.Decode([]byte(kfs.HMACKey))
+			require.NoError(t, err)
 
-	nonce := make([]byte, aeadE.NonceSize())
-	_, err = rand.Read(nonce)
-	require.NoError(t, err)
+			policySessionEncrypt, err := NewNoPolicySession()
+			require.NoError(t, err)
 
-	plaintext := []byte(dataToEncrypt)
-	associatedData := []byte(aad)
+			aeadE, err := NewAESCTRHMAC(swTPMPath, []byte(nil), a, h, policySessionEncrypt)
+			require.NoError(t, err)
 
-	// Encrypt
-	ciphertext := aeadE.Seal(nil, nonce, plaintext, associatedData)
+			nonce := make([]byte, aeadE.NonceSize())
+			_, err = rand.Read(nonce)
+			require.NoError(t, err)
 
-	// Decrypt
-	policySessionDecrypt, err := NewNoPolicySession()
-	require.NoError(t, err)
+			plaintext := []byte(dataToEncrypt)
+			associatedData := []byte(aad)
 
-	aeadD, err := NewAESCTRHMAC(swTPMPath, []byte(nil), a, h, policySessionDecrypt)
-	require.NoError(t, err)
+			// Encrypt
+			ciphertext := aeadE.Seal(nil, nonce, plaintext, associatedData)
 
-	nonceSize := aeadD.NonceSize()
-	retrievedNonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+			// Decrypt
+			policySessionDecrypt, err := NewNoPolicySession()
+			require.NoError(t, err)
 
-	// // Decrypt
-	decrypted, err := aeadD.Open(nil, retrievedNonce, actualCiphertext, associatedData)
-	require.NoError(t, err)
-	require.Equal(t, dataToEncrypt, string(decrypted))
+			aeadD, err := NewAESCTRHMAC(swTPMPath, []byte(nil), a, h, policySessionDecrypt)
+			require.NoError(t, err)
 
+			nonceSize := aeadD.NonceSize()
+			retrievedNonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
+			// // Decrypt
+			decrypted, err := aeadD.Open(nil, retrievedNonce, actualCiphertext, associatedData)
+			require.NoError(t, err)
+			require.Equal(t, dataToEncrypt, string(decrypted))
+		})
+	}
 }
 
 func TestLargePlaintext(t *testing.T) {
@@ -421,8 +433,18 @@ func TestVector(t *testing.T) {
 	// CT: 94aacf00092723e778d25ba78e9d27
 	// TAG: bd5fcf90b9532e7abfa858aed90d5170f08edcdd28ff2c673e0ab45b8c0a0f39
 
+	// https://boringssl.googlesource.com/boringssl.git/+/09f7078f953362d5c5afdd224118845327b60fb4/src/crypto/cipher_extra/test/aes_128_ctr_hmac_sha256.txt#148
+
+	// KEY: a493dd6de6fd6584599096442dd9345f6f2d8fc2d426c78eee2b992b4071aba4ce463f3ca293c84b2faf3e8644b6ec25
+	// NONCE: 4f9be6f788ee960adc650d86
+	// IN: 4de6e244251091cf13762d20685e9085
+	// AD: d15da312b7522c18384acdbf6348b5e105557f1790a6a203a65acd73397524681666743f3145048775ad84e3
+	// CT: bb1296457daa39d889c8f986938d6a39
+	// TAG: b93548cea90c34d03d6f5683ae2cc78814531b803d42cfe57623fd4bdc8f084c
+
 	tests := []struct {
 		name          string
+		keySize       int
 		dataToEncrypt string
 		aesKey        string
 		hmacKey       string
@@ -431,14 +453,18 @@ func TestVector(t *testing.T) {
 		ciphertext    string
 		tag           string
 	}{
-		{"test1", "3ad57105144e544f95b82d485f80bb", "e787fdeca1095f2f2760a1c5e0f302e07d6b08de39ce31fe6a0db2f76e4626eb",
+		{"test1_aes256", 256, "3ad57105144e544f95b82d485f80bb", "e787fdeca1095f2f2760a1c5e0f302e07d6b08de39ce31fe6a0db2f76e4626eb",
 			"0968768ae04d37082c114573c307699707630b8c7ceef60abe3b7831d2adcd6e",
 			"96bce5dcaf4a90f6638a7e30cfd840a1e8dbc60cb70ab9592803f8799f909cafe71a83c2d884e1e289cc61e7", "9dc9bcfe8b4e2ea059e349bb",
 			"e504109cdbf57b0e8a87080379e00d", "1798a64b5261761ecd88f36eaf7f86ed3db62100aed20dc6e337bc93c459487e"},
-		{"test2", "e386663e249b241fb8249cfec33ac2", "b43ab650bdd201cf05e0436afe89ac54867383f04c5ed2faea5db8e6784c720d",
+		{"test2_aes256", 256, "e386663e249b241fb8249cfec33ac2", "b43ab650bdd201cf05e0436afe89ac54867383f04c5ed2faea5db8e6784c720d",
 			"905234f1f5443c550ca14edd8d697fa2d9e288aa58c9a337b30e6d41cfa56545",
 			"3cf7a396e1bd034ea77a54ffca789f206f94263d90d98bf3e69cb42205fc5c95cfbd0481b0ec490ea447299159", "4e3dd3efe527902b9de45a5f",
 			"94aacf00092723e778d25ba78e9d27", "bd5fcf90b9532e7abfa858aed90d5170f08edcdd28ff2c673e0ab45b8c0a0f39"},
+		{"test3_aes128", 128, "4de6e244251091cf13762d20685e9085", "a493dd6de6fd6584599096442dd9345f",
+			"6f2d8fc2d426c78eee2b992b4071aba4ce463f3ca293c84b2faf3e8644b6ec25",
+			"d15da312b7522c18384acdbf6348b5e105557f1790a6a203a65acd73397524681666743f3145048775ad84e3", "4f9be6f788ee960adc650d86",
+			"bb1296457daa39d889c8f986938d6a39", "b93548cea90c34d03d6f5683ae2cc78814531b803d42cfe57623fd4bdc8f084c"},
 	}
 
 	for _, tc := range tests {
@@ -531,7 +557,7 @@ func TestVector(t *testing.T) {
 							Mode:      tpm2.NewTPMUSymMode(tpm2.TPMAlgAES, tpm2.TPMAlgCTR),
 							KeyBits: tpm2.NewTPMUSymKeyBits(
 								tpm2.TPMAlgAES,
-								tpm2.TPMKeyBits(256),
+								tpm2.TPMKeyBits(tc.keySize),
 							),
 						},
 					},
